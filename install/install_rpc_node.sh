@@ -1,16 +1,15 @@
 #!/bin/bash
 #set -x -e
 
-echo "###################### WARNING!!! ######################"
-echo "###   This script will bootstrap an RPC node         ###"
-echo "###   for the Solana blockchain, and connect         ###"
-echo "###   it to the monitoring dashboard                 ###"
-echo "###   at solana.thevalidators.io                     ###"
+echo "###################### 警告!!! ######################"
+echo "###   此脚本将为 Solana 区块链启动一个 RPC 节点    ###"
+echo "###   并连接到监控仪表板                          ###"
+echo "###   在 solana.thevalidators.io                    ###"
 echo "########################################################"
 
 install_rpc () {
 
-  echo "### Please choose the cluster: ###"
+  echo "### 请选择集群: ###"
   select cluster in "mainnet-beta" "testnet"; do
       case $cluster in
           mainnet-beta ) inventory="mainnet.yaml"; break;;
@@ -18,13 +17,13 @@ install_rpc () {
       esac
   done
 
-  echo "Please enter a name for your RPC node: "
+  echo "请输入您的 RPC 节点名称: "
   read VALIDATOR_NAME
-  read -e -p "Please enter the full path to your validator key pair file or leave it blank, then the keys will be created: " -i "" PATH_TO_VALIDATOR_KEYS
+  read -e -p "请输入您的验证器密钥对文件的完整路径，或留空，然后将创建密钥对: " -i "" PATH_TO_VALIDATOR_KEYS
 
 
-  read -e -p "Enter new RAM drive size, GB (recommended size: server RAM minus 16GB):" -i "48" RAM_DISK_SIZE
-  read -e -p "Enter new server swap size, GB (recommended size: equal to server RAM): " -i "64" SWAP_SIZE
+  read -e -p "输入新的 RAM 磁盘大小，GB（推荐大小：服务器 RAM 减去 16GB）：" -i "48" RAM_DISK_SIZE
+  read -e -p "输入新的服务器交换文件大小，GB（推荐大小：与服务器 RAM 相等）：" -i "64" SWAP_SIZE
 
   rm -rf sv_manager/
 
@@ -36,29 +35,25 @@ install_rpc () {
   pkg_manager=yum
   fi
 
-  echo "Updating packages..."
+  echo "更新软件包..."
   $pkg_manager update
-  echo "Installing ansible, curl, unzip..."
+  echo "安装 ansible、curl、unzip..."
   $pkg_manager install ansible curl unzip --yes
 
   ansible-galaxy collection install ansible.posix
   ansible-galaxy collection install community.general
 
-  echo "Downloading Solana validator manager version $sv_manager_version"
+  echo "下载 Solana 验证器管理器版本 $sv_manager_version"
   cmd="https://github.com/mfactory-lab/sv-manager/archive/refs/tags/$sv_manager_version.zip"
-  echo "starting $cmd"
+  echo "开始 $cmd"
   curl -fsSL "$cmd" --output sv_manager.zip
-  echo "Unpacking"
+  echo "解压"
   unzip ./sv_manager.zip -d .
 
   mv sv-manager* sv_manager
   rm ./sv_manager.zip
   cd ./sv_manager || exit
   cp -r ./inventory_example ./inventory
-
-  # shellcheck disable=SC2154
-  #echo "pwd: $(pwd)"
-  #ls -lah ./
 
   ansible-playbook --connection=local --inventory ./inventory/$inventory --limit localhost_rpc  playbooks/pb_config.yaml --extra-vars "{ \
   'validator_name':'$VALIDATOR_NAME', \
@@ -83,11 +78,11 @@ install_rpc () {
 
   ansible-playbook --connection=local --inventory ./inventory/$inventory --limit localhost_rpc  playbooks/pb_install_validator.yaml --extra-vars "@/etc/sv_manager/sv_manager.conf" $SOLANA_VERSION $EXTRA_INSTALL_VARS $TAGS
 
-  echo "### 'Uninstall ansible ###"
+  echo "### '卸载 ansible ###"
 
   $pkg_manager remove ansible --yes
 
-  echo "### Check your dashboard: https://solana.thevalidators.io/d/e-8yEOXMwerfwe/solana-monitoring?&var-server=$VALIDATOR_NAME"
+  echo "### 检查您的仪表板：https://solana.thevalidators.io/d/e-8yEOXMwerfwe/solana-monitoring?&var-server=$VALIDATOR_NAME"
 
 }
 
@@ -105,12 +100,12 @@ done
 
 sv_manager_version=${sv_manager_version:-latest}
 
-echo "installing sv manager version $sv_manager_version"
+echo "安装 sv manager 版本 $sv_manager_version"
 
-echo "This script will bootstrap a Solana RPC node. Proceed?"
-select yn in "Yes" "No"; do
+echo "此脚本将启动 Solana RPC 节点。继续吗？"
+select yn in "是" "否"; do
     case $yn in
-        Yes ) install_rpc "$sv_manager_version" "$extra_vars" "$solana_version" "$tags"; break;;
-        No ) echo "Aborting install. No changes will be made."; exit;;
+        是 ) install_rpc "$sv_manager_version" "$extra_vars" "$solana_version" "$tags"; break;;
+        否 ) echo "安装中止。不会进行任何更改。"; exit;;
     esac
 done
